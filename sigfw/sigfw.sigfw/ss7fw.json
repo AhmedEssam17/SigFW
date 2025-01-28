@@ -75,100 +75,27 @@
 			"sccp": {
 				"sccp_comment": "# SCCP firewall rules",
 				"calling_gt_whitelist": [
-					"4*"
+					"*"
 				],
 				"calling_gt_blacklist": [
-					"10000000000",
-					"222*"
 				]
 			},
 			
 			"tcap": {
 				"tcap_comment": "# TCAP Cat1 firewall rules",
 				"oc_blacklist": [
-					"5",
-					"6",
-					"9",
-					"16",
-					"20",
-					"21",
-					"22",
-					"24",
-					"25",
-					"26",
-					"27",
-					"28",
-					"29",
-					"30",
-					"31",
-					"32",
-					"33",
-					"34",
-					"35",
-					"39",
-					"40",
-					"41",
-					"42",
-					"43",
-					"50",
-					"51",
-					"52",
-					"55",
-					"58",
-					"62",
-					"65",
-					"68",
-					"69",
-					"71",
-					"72",
-					"76",
-					"77",
-					"78",
-					"79",
-					"80",
-					"81",
-					"82",
-					"83",
-					"84",
-					"85",
-					"86",
-					"109",
-					"110",
-					"111",
-					"112",
-					"113",
-					"114",
-					"115",
-					"116",
-					"117",
-					"118",
-					"119",
-					"120",
-					"121",
-					"122",
-					"123",
-					"124",
-					"125",
-					"126"		
 				]
 			},
 			
 			"map": {
 				"map_comment": "# MAP Cat2 firewall rules",
 				"cat2_oc_blacklist": [
-					"3",
-					"4",
-					"7",
-					"8",
-					"70"
 				]
 			},
 			
 			"lua": {
 				"lua_comment": "# LUA Blacklist firewall rules. Currently supported LUA variables are: sccp_calling_gt, sccp_called_gt, tcap_oc, tcap_ac, tcap_tag, map_imsi, map_msisdn",
 				"blacklist_rules": [
-					"sccp_called_gt == '22222222222'",
-					"sccp_calling_gt == '11111111111' and tcap_oc == '59'"
 				]
 			},
 			

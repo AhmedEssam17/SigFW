@@ -49,21 +49,18 @@
 
 	<Network>
 		<Peers>
-
-			<Peer name="aaa://127.0.0.1:3869" portRange="13868-13868" attempt_connect="true" rating="1" />
+			<!-- Changed port from 3869 to 3868 -->
+			<Peer name="aaa://127.0.0.1:3868" portRange="13868-13868" attempt_connect="true" rating="1" />
 
 		</Peers>
 		<Realms>
-			<Realm name="exchange.example.org" peers="127.0.0.1"
-				local_action="LOCAL" dynamic="false" exp_time="1">
+			<Realm name="exchange.example.org" peers="127.0.0.1" local_action="LOCAL" dynamic="false" exp_time="1">
 				<ApplicationID>
 					<VendorId value="0" />
 					<AuthApplId value="16777251" />
 					<AcctApplId value="0" />
 				</ApplicationID>
 			</Realm>
-
-
 		</Realms>
 	</Network>
 

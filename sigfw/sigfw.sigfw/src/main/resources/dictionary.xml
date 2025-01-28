@@ -67,6 +67,10 @@
 		<type type-name="Unsigned32" />
 	</avpdefn>
 
+	<avpdefn name="MSISDN" code="701" mandatory="must" protected="may" may-encrypt="no" vendor-bit="must" >
+		<type type-name="OctetString" />
+	</avpdefn>
+
 	<avpdefn name="Vendor-Specific-Application-Id" code="260" mandatory="must" protected="mustnot" may-encrypt="no" vendor-bit="mustnot" >
 		<grouped>
 			<avp name="Vendor-Id" multiplicity="1+" />
@@ -2979,10 +2983,6 @@
 
 	<avpdefn name="3GPP-IMSI" code="1" vendor-id="TGPP" mandatory="must" protected="may" may-encrypt="no" vendor-bit="must" >
 		<type type-name="UTF8String" />
-	</avpdefn>
-
-	<avpdefn name="MSISDN" code="701" vendor-id="TGPP" mandatory="must" protected="may" may-encrypt="no" vendor-bit="must" >
-		<type type-name="OctetString" />
 	</avpdefn>
 
 	<avpdefn name="PoC-Information" code="879" vendor-id="TGPP" mandatory="must" protected="mustnot" may-encrypt="no" vendor-bit="must" >
@@ -6853,6 +6853,128 @@
 	</application>
 
 	<!-- ************************ END 3GPP S6a ******************* -->
+
+	<!-- ************************ 3GPP S6c ******************* -->
+	<!-- < >: Mandatory -->
+	<!-- [ ]: Optional-->
+	<!-- { }: Mandatory AVP -->
+	<!-- *[ ]: Zero or more occurrences of optional elements -->
+<!--
+< Send-Routing-Info-for-SM-Request > ::=	< Diameter Header: 8388647, REQ, PXY, 16777312 >
+< Session-Id >
+[ DRMP ]
+[ Vendor-Specific-Application-Id ]
+{ Auth-Session-State }
+{ Origin-Host }
+{ Origin-Realm }
+[ Destination-Host ]
+{ Destination-Realm }
+[ MSISDN ] MSISDN
+[ User-Name ] IMSI
+[ SMSMI-Correlation-ID ]
+*[ Supported-Features ]
+[ SC-Address ] AVP 3300
+[ SM-RP-MTI ]
+[ SM-RP-SMEA ]
+[ SRR-Flags ]
+[ SM-Delivery-Not-Intended ]
+*[ AVP ]
+*[ Proxy-Info ]
+*[ Route-Record ] 
+-->
+	<avpdefn name="SC-Address" code="3300" mandatory="must" protected="may" may-encrypt="no" vendor-bit="must" >
+		<type type-name="OctetString" />
+	</avpdefn>
+
+	<avpdefn name="MSC-Number" code="2403" mandatory="must" protected="may" may-encrypt="no" vendor-bit="must" >
+		<type type-name="OctetString" />
+	</avpdefn>
+
+	<avpdefn name="LMSI" code="2403" vendor-id="TGPP" mandatory="must" protected="may" may-encrypt="no" vendor-bit="must" >
+		<type type-name="OctetString" />
+	</avpdefn>
+
+	<avpdefn name="User-Identifier" code="3102" mandatory="must" protected="may" may-encrypt="no" vendor-bit="must" >
+		<grouped>
+			<avp name="User-Name" multiplicity="0-1"/>
+			<avp name="MSISDN" multiplicity="0-1"/>   <!-- Missing External-Identifier-->
+			<avp name="LMSI" multiplicity="0-1"/>
+		</grouped>
+	</avpdefn>
+
+	<avpdefn name="Serving-Node" code="2401" mandatory="must" protected="may" may-encrypt="no" vendor-bit="must" >
+		<grouped>
+			<avp name="SGSN-Number" multiplicity="0-1"/>  <!-- TEST only, doesn't follow standard-->
+			<avp name="GMLC-Number" multiplicity="0-1"/>   <!-- TEST only, doesn't follow standard-->
+			<avp name="MSC-Number" multiplicity="0-1"/>
+		</grouped>
+	</avpdefn>
+
+	<application id="16777312" vendor-id="TGPP" name="3GPP S6c (Rel9)" URI="https://www.3gpp.org/ftp/Specs/archive/29_series/29.338/29338-j00.zip">
+		<command name="Send-Routing-Info-for-SM-Request" code="8388647" request="true">
+			<avp name="Session-Id" code="263" vendor="0" multiplicity="1" index="0" />
+			<avp name="Auth-Session-State" code="277" vendor="0" multiplicity="1" index="-1" />
+			<avp name="Origin-Host" code="264" vendor="0" multiplicity="1" index="-1" />
+			<avp name="Origin-Realm" code="296" vendor="0" multiplicity="1" index="-1" />
+			<avp name="Destination-Host" code="293" vendor="0" multiplicity="0-1" index="-1" />
+			<avp name="Destination-Realm" code="283" vendor="0" multiplicity="1" index="-1" />
+			<avp name="MSISDN" code="701" vendor="0" multiplicity="1" index="-1" />
+			<avp name="User-Name" code="1" vendor="0" multiplicity="0" index="-1" />
+			<avp name="SC-Address" code="3300" vendor="10415" multiplicity="0" index="-1" />
+		</command>
+
+<!--
+< Send-Routing-info-for-SM-Answer > ::=	< Diameter Header: 8388647, PXY, 16777312 >
+< Session-Id >
+[ DRMP ]
+[ Vendor-Specific-Application-Id ]
+[ Result-Code ]
+[ Experimental-Result ]
+{ Auth-Session-State }
+{ Origin-Host }
+{ Origin-Realm }
+{ Destination-Host }
+{ Destination-Realm }
+[ User-Name ] IMSI
+*[ Supported-Features ]
+[ Serving-Node ]
+[ Additional-Serving-Node ]
+[ SMSF-3GPP-Address ]
+[ SMSF-Non-3GPP-Address ]
+[ LMSI ] MSC ISDN number
+[ User-Identifier ] MSISDN
+[ MWD-Status ]
+[ MME-Absent-User-Diagnostic-SM ]
+[ MSC-Absent-User-Diagnostic-SM ]
+[ SGSN-Absent-User-Diagnostic-SM ]
+[ SMSF-3GPP-Absent-User-Diagnostic-SM ]
+[ SMSF-Non-3GPP-Absent-User-Diagnostic-SM ]
+*[ AVP ]
+[ Failed-AVP ]
+*[ Proxy-Info ]
+*[ Route-Record ]
+[ MPS-Priority]
+-->
+
+		<command name="Send-Routing-info-for-SM-Answer" code="8388647" request="false">
+			<avp name="Session-Id" code="263" vendor="0" multiplicity="1" index="0" />
+			<avp name="Result-Code" code="268" vendor="0" multiplicity="0-1" index="-1" />
+			<avp name="Experimental-Result" code="297" vendor="0" multiplicity="0-1" index="-1" />
+			<avp name="Auth-Session-State" code="277" vendor="0" multiplicity="1" index="-1" />
+			<avp name="Origin-Host" code="264" vendor="0" multiplicity="1" index="-1" />
+			<avp name="Origin-Realm" code="296" vendor="0" multiplicity="1" index="-1" />
+			<avp name="Destination-Host" code="293" vendor="0" multiplicity="0-1" index="-1" />
+			<avp name="Destination-Realm" code="283" vendor="0" multiplicity="1" index="-1" />
+			<avp name="User-Name" code="1" vendor="0" multiplicity="1" index="-1" />
+			<avp name="Supported-Features" code="628" vendor="10415" multiplicity="0+" index="-1" />
+			<avp name="Serving-Node" code="2401" vendor="0" multiplicity="0-1" index="-1" />
+			<avp name="LMSI" code="2400" vendor="10415" multiplicity="0-1" index="-1" />
+			<avp name="User-Identifier" code="1" vendor="0" multiplicity="0" index="-1" />
+			<avp name="Failed-AVP" code="279" vendor="0" multiplicity="0+" index="-1" />
+		</command>
+	</application>
+
+	<!-- ************************ END 3GPP S6c ******************* -->
 
 	<!-- UNUSED AVPs (57) -->
 	<avpdefn name="Base-Time-Interval" code="1265" vendor-id="TGPP" mandatory="must" protected="may" may-encrypt="yes" vendor-bit="must" >

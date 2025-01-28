@@ -62,371 +62,465 @@ import org.mobicents.diameter.dictionary.AvpRepresentation;
  * 
  */
 public class DiameterServer implements NetworkReqListener {
-	private static final Logger log = Logger.getLogger(DiameterServer.class);
-	static{
+    private static final Logger log = Logger.getLogger(DiameterServer.class);
+    static {
 
-		configLog4j();
-	
-}
+        configLog4j();
 
-private static void configLog4j() {
-	InputStream inStreamLog4j = DiameterServer.class.getClassLoader().getResourceAsStream("log4j.properties");
-	Properties propertiesLog4j = new Properties();
-	try {
-		propertiesLog4j.load(inStreamLog4j);
-		PropertyConfigurator.configure(propertiesLog4j);
-	} catch (Exception e) {
-		e.printStackTrace();
-	}
+    }
 
-	log.debug("log4j configured");
+    private static void configLog4j() {
+        InputStream inStreamLog4j = DiameterServer.class.getClassLoader().getResourceAsStream("log4j.properties");
+        Properties propertiesLog4j = new Properties();
+        try {
+            propertiesLog4j.load(inStreamLog4j);
+            PropertyConfigurator.configure(propertiesLog4j);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-}
-	private static final String configFile = "server-jdiameter-config.xml";
-	private static final String dictionaryFile = "dictionary.xml";
-	private static final String realmName = "exchange.example.org";
-	// Defs for our app
-	private static final int commandCode = 316;
-	private static final long vendorID = 66666;
-	private static final long applicationID = 16777251;
-	private ApplicationId authAppId = ApplicationId.createByAuthAppId(applicationID);;
-	private static final int exchangeTypeCode = 888;
-	private static final int exchangeDataCode = 999;
-	// enum values for Exchange-Type AVP
-	private static final int EXCHANGE_TYPE_INITIAL = 0;
-	private static final int EXCHANGE_TYPE_INTERMEDIATE = 1;
-	private static final int EXCHANGE_TYPE_TERMINATING = 2;
-	
-	private static final String[] TO_RECEIVE = new String[] { "I want to get 3 answers", "This is second message", "Bye bye" };
-	private AvpDictionary dictionary = AvpDictionary.INSTANCE;
-	private Stack stack;
-	private SessionFactory factory;
+        log.debug("log4j configured");
 
-	// ////////////////////////////////////////
-	// Objects which will be used in action //
-	// ////////////////////////////////////////
-	private Session session;
-	private int toReceiveIndex = 0;
-	private boolean finished = false;
+    }
 
-	private void initStack() {
+    private static final String configFile = "server-jdiameter-config.xml";
+    private static final String dictionaryFile = "dictionary.xml";
+    private static final String realmName = "exchange.example.org";
+    // Defs for our app
+    private static final int commandCode = 316;
+    private static final long vendorID = 66666;
+    private static final long applicationID = 16777251;
+    private ApplicationId authAppId = ApplicationId.createByAuthAppId(applicationID);;
+    private static final int exchangeTypeCode = 888;
+    private static final int exchangeDataCode = 999;
+    // enum values for Exchange-Type AVP
+    private static final int EXCHANGE_TYPE_INITIAL = 0;
+    private static final int EXCHANGE_TYPE_INTERMEDIATE = 1;
+    private static final int EXCHANGE_TYPE_TERMINATING = 2;
 
+    private static final String[] TO_RECEIVE = new String[] { "I want to get 3 answers", "This is second message",
+            "Bye bye" };
+    private AvpDictionary dictionary = AvpDictionary.INSTANCE;
+    private Stack stack;
+    private SessionFactory factory;
+
+    // ////////////////////////////////////////
+    // Objects which will be used in action //
+    // ////////////////////////////////////////
+    private Session session;
+    private int toReceiveIndex = 0;
+    private boolean finished = false;
+
+    private void initStack() {
+
+        if (log.isInfoEnabled()) {
+            log.info("Initializing Stack...");
+        }
+        InputStream is = null;
+        try {
+            dictionary.parseDictionary(this.getClass().getClassLoader().getResourceAsStream(dictionaryFile));
+            log.info("AVP Dictionary successfully parsed.");
+            this.stack = new StackImpl();
+
+            is = this.getClass().getClassLoader().getResourceAsStream(configFile);
+
+            Configuration config = new XMLConfiguration(is);
+            factory = stack.init(config);
             if (log.isInfoEnabled()) {
-                    log.info("Initializing Stack...");
-            }
-            InputStream is = null;
-            try {
-                dictionary.parseDictionary(this.getClass().getClassLoader().getResourceAsStream(dictionaryFile));
-                log.info("AVP Dictionary successfully parsed.");
-                this.stack = new StackImpl();
-
-                is = this.getClass().getClassLoader().getResourceAsStream(configFile);
-
-                Configuration config = new XMLConfiguration(is);
-                factory = stack.init(config);
-                if (log.isInfoEnabled()) {
-                    log.info("Stack Configuration successfully loaded.");
-                }
-
-                Set<org.jdiameter.api.ApplicationId> appIds = stack.getMetaData().getLocalPeer().getCommonApplications();
-
-                log.info("Diameter Stack  :: Supporting " + appIds.size() + " applications.");
-                for (org.jdiameter.api.ApplicationId x : appIds) {
-                    log.info("Diameter Stack  :: Common :: " + x);
-                }
-                is.close();
-                Network network = stack.unwrap(Network.class);
-                network.addNetworkReqListener(this, this.authAppId);
-            } catch (Exception e) {
-                e.printStackTrace();
-                if (this.stack != null) {
-                    this.stack.destroy();
-                }
-
-                if (is != null) {
-                    try {
-                        is.close();
-                    } catch (IOException e1) {
-                        // TODO Auto-generated catch block
-                        e1.printStackTrace();
-                    }
-                }
-                return;
+                log.info("Stack Configuration successfully loaded.");
             }
 
-            MetaData metaData = stack.getMetaData();
-            if (metaData.getStackType() != StackType.TYPE_SERVER || metaData.getMinorVersion() <= 0) {
-                stack.destroy();
-                if (log.isEnabledFor(org.apache.log4j.Level.ERROR)) {
-                        log.error("Incorrect driver");
-                }
-                return;
+            Set<org.jdiameter.api.ApplicationId> appIds = stack.getMetaData().getLocalPeer().getCommonApplications();
+
+            log.info("Diameter Stack  :: Supporting " + appIds.size() + " applications.");
+            for (org.jdiameter.api.ApplicationId x : appIds) {
+                log.info("Diameter Stack  :: Common :: " + x);
+            }
+            is.close();
+            Network network = stack.unwrap(Network.class);
+            network.addNetworkReqListener(this, this.authAppId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (this.stack != null) {
+                this.stack.destroy();
             }
 
-            try {
-                if (log.isInfoEnabled()) {
-                        log.info("Starting stack");
-                }
-                stack.start();
-                if (log.isInfoEnabled()) {
-                        log.info("Stack is running.");
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                stack.destroy();
-                return;
-            }
-            if (log.isInfoEnabled()) {
-                log.info("Stack initialization successfully completed.");
-            }
-	}
-	
-	private void dumpMessage(Message message, boolean sending) {
-            if (log.isInfoEnabled()) {
-                    log.info((sending?"Sending ":"Received ") + (message.isRequest() ? "Request: " : "Answer: ") + message.getCommandCode() + "\nE2E:"
-                                    + message.getEndToEndIdentifier() + "\nHBH:" + message.getHopByHopIdentifier() + "\nAppID:" + message.getApplicationId());
-                    log.info("AVPS["+message.getAvps().size()+"]: \n");
-                    try {
-                            printAvps(message.getAvps());
-                    } catch (AvpDataException e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                    }
-            }
-	}
-
-	private void printAvps(AvpSet avpSet) throws AvpDataException {
-            printAvpsAux(avpSet, 0);
-	}
-
-	/**
-	 * Prints the AVPs present in an AvpSet with a specified 'tab' level
-	 * 
-	 * @param avpSet
-	 *            the AvpSet containing the AVPs to be printed
-	 * @param level
-	 *            an int representing the number of 'tabs' to make a pretty
-	 *            print
-	 * @throws AvpDataException
-	 */
-	private void printAvpsAux(AvpSet avpSet, int level) throws AvpDataException {
-            String prefix = "                      ".substring(0, level * 2);
-
-            for (Avp avp : avpSet) {
-                AvpRepresentation avpRep = AvpDictionary.INSTANCE.getAvp(avp.getCode(), avp.getVendorId());
-
-                if (avpRep != null && avpRep.getType().equals("Grouped")) {
-                    log.info(prefix + "<avp name=\"" + avpRep.getName() + "\" code=\"" + avp.getCode() + "\" vendor=\"" + avp.getVendorId() + "\">");
-                    printAvpsAux(avp.getGrouped(), level + 1);
-                    log.info(prefix + "</avp>");
-                } else if (avpRep != null) {
-                    String value = "";
-
-                    if (avpRep.getType().equals("Integer32"))
-                            value = String.valueOf(avp.getInteger32());
-                    else if (avpRep.getType().equals("Integer64") || avpRep.getType().equals("Unsigned64"))
-                            value = String.valueOf(avp.getInteger64());
-                    else if (avpRep.getType().equals("Unsigned32"))
-                            value = String.valueOf(avp.getUnsigned32());
-                    else if (avpRep.getType().equals("Float32"))
-                            value = String.valueOf(avp.getFloat32());
-                    else
-                            //value = avp.getOctetString();
-                            value = new String(avp.getOctetString(), StandardCharsets.UTF_8);
-
-                    log.info(prefix + "<avp name=\"" + avpRep.getName() + "\" code=\"" + avp.getCode() + "\" vendor=\"" + avp.getVendorId()
-                                    + "\" value=\"" + value + "\" />");
-                }
-            }
-	}
-
-	
-	
-
-	/**
-	 * @return
-	 */
-	private boolean finished() {
-            return this.finished;
-	}
-
-	public static void main(String[] args) {
-            DiameterServer es = new DiameterServer();
-            es.initStack();
-
-            while (!es.finished()) {
+            if (is != null) {
                 try {
-                        Thread.currentThread().sleep(5000);
-                } catch (InterruptedException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
+                    is.close();
+                } catch (IOException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
                 }
             }
-	}
+            return;
+        }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.jdiameter.api.NetworkReqListener#processRequest(org.jdiameter.api
-	 * .Request)
-	 */
-	@Override
-	public Answer processRequest(Request request) {
-            dumpMessage(request, false);
-            /*if (request.getCommandCode() != commandCode) {
-                log.error("Received bad answer: " + request.getCommandCode());
-                return null;
-            }*/
-            //AvpSet requestAvpSet = request.getAvps();
-            
-            Answer answer = createAnswer(request, 2001, EXCHANGE_TYPE_INITIAL); 
-            return answer;
-
-            /*Avp exchangeTypeAvp = requestAvpSet.getAvp(exchangeTypeCode, vendorID);
-            Avp exchangeDataAvp = requestAvpSet.getAvp(exchangeDataCode, vendorID);
-            if (exchangeTypeAvp == null) {
-                log.error("Request does not have Exchange-Type");
-
-                Answer answer = createAnswer(request, 5004, EXCHANGE_TYPE_TERMINATING); 
-                dumpMessage(answer,true);
-                return answer; // set
-                                                                                                                                                    // exchange
-                                                                                                                                                    // type
-                                                                                                                                                    // to
-                                                                                                                                                    // terminating
+        MetaData metaData = stack.getMetaData();
+        if (metaData.getStackType() != StackType.TYPE_SERVER || metaData.getMinorVersion() <= 0) {
+            stack.destroy();
+            if (log.isEnabledFor(org.apache.log4j.Level.ERROR)) {
+                log.error("Incorrect driver");
             }
-            if (exchangeDataAvp == null) {
-                log.error("Request does not have Exchange-Data");
-                Answer answer = createAnswer(request, 5004, EXCHANGE_TYPE_TERMINATING); 
-                dumpMessage(answer,true);
-                return answer; // set
-                                                                                                                                                    // exchange
-                                                                                                                                                    // type
-                                                                                                                                                    // to
-                                                                                                                                                    // terminating
+            return;
+        }
+
+        try {
+            if (log.isInfoEnabled()) {
+                log.info("Starting stack");
             }
-            // cast back to int(Enumerated is Unsigned32, and API represents it as
-            // long so its easier
-            // to manipulate
+            stack.start();
+            if (log.isInfoEnabled()) {
+                log.info("Stack is running.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            stack.destroy();
+            return;
+        }
+        if (log.isInfoEnabled()) {
+            log.info("Stack initialization successfully completed.");
+        }
+    }
+
+    private void dumpMessage(Message message, boolean sending) {
+        if (log.isInfoEnabled()) {
+            log.info((sending ? "Sending " : "Received ") + (message.isRequest() ? "Request: " : "Answer: ")
+                    + message.getCommandCode() + "\nE2E:"
+                    + message.getEndToEndIdentifier() + "\nHBH:" + message.getHopByHopIdentifier() + "\nAppID:"
+                    + message.getApplicationId());
+            log.info("AVPS[" + message.getAvps().size() + "]: \n");
             try {
-                switch ((int) exchangeTypeAvp.getUnsigned32()) {
-                case EXCHANGE_TYPE_INITIAL:
-                    // JIC check;
-                    String data = exchangeDataAvp.getUTF8String();
-                    this.session = this.factory.getNewSession(request.getSessionId());
-                    if (data.equals(TO_RECEIVE[toReceiveIndex])) {
-                        // create session;
-
-                        Answer answer = createAnswer(request, 2001, EXCHANGE_TYPE_INITIAL); // set
-                                                                                                                                                                                // exchange
-                                                                                                                                                                                // type
-                                                                                                                                                                                // to
-                                                                                                                                                                                // terminating
-                        toReceiveIndex++;
-                        dumpMessage(answer,true);
-                        return answer;
-                    } else {
-                        log.error("Received wrong Exchange-Data: " + data);
-                        Answer answer = request.createAnswer(6000);
-                    }
-                    break;
-                case EXCHANGE_TYPE_INTERMEDIATE:
-                    // JIC check;
-                    data = exchangeDataAvp.getUTF8String();
-                    if (data.equals(TO_RECEIVE[toReceiveIndex])) {
-
-                        Answer answer = createAnswer(request, 2001, EXCHANGE_TYPE_INTERMEDIATE); // set
-                                                                                                                                                                                // exchange
-                                                                                                                                                                                // type
-                                                                                                                                                                                // to
-                                                                                                                                                                                // terminating
-                        toReceiveIndex++;
-                        dumpMessage(answer,true);
-                        return answer;
-                    } else {
-                        log.error("Received wrong Exchange-Data: " + data);
-                    }
-                    break;
-                case EXCHANGE_TYPE_TERMINATING:
-                    data = exchangeDataAvp.getUTF8String();
-                    if (data.equals(TO_RECEIVE[toReceiveIndex])) {
-                        // good, we reached end of FSM.
-                        finished = true;
-                        // release session and its resources.
-                        Answer answer = createAnswer(request, 2001, EXCHANGE_TYPE_TERMINATING); // set
-                                                                                                                                                                        // exchange
-                                                                                                                                                                        // type
-                                                                                                                                                                        // to
-                                                                                                                                                                        // terminating
-                        toReceiveIndex++;
-                        this.session.release();
-                        finished = true;
-                        this.session = null;
-                        dumpMessage(answer,true);
-                        return answer;
-
-                    } else {
-                        log.error("Received wrong Exchange-Data: " + data);
-                    }
-                    break;
-                default:
-                    log.error("Bad value of Exchange-Type avp: " + exchangeTypeAvp.getUnsigned32());
-                    break;
-                }
+                printAvps(message.getAvps());
             } catch (AvpDataException e) {
-                // thrown when interpretation of byte[] fails
-                e.printStackTrace();
-            } catch (InternalException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-            //error, something bad happened.
-            finished = true;*/
-            //return null;
-	}
+        }
+    }
 
-	private Answer createAnswer(Request r, int resultCode, int enumType) {
-            Answer answer = r.createAnswer(resultCode);
+    private void printAvps(AvpSet avpSet) throws AvpDataException {
+        printAvpsAux(avpSet, 0);
+    }
+
+    /**
+     * Prints the AVPs present in an AvpSet with a specified 'tab' level
+     * 
+     * @param avpSet
+     *               the AvpSet containing the AVPs to be printed
+     * @param level
+     *               an int representing the number of 'tabs' to make a pretty
+     *               print
+     * @throws AvpDataException
+     */
+    private void printAvpsAux(AvpSet avpSet, int level) throws AvpDataException {
+        String prefix = "                      ".substring(0, level * 2);
+
+        for (Avp avp : avpSet) {
+            AvpRepresentation avpRep = AvpDictionary.INSTANCE.getAvp(avp.getCode(), avp.getVendorId());
+
+            if (avpRep != null && avpRep.getType().equals("Grouped")) {
+                log.info(prefix + "<avp name=\"" + avpRep.getName() + "\" code=\"" + avp.getCode() + "\" vendor=\""
+                        + avp.getVendorId() + "\">");
+                printAvpsAux(avp.getGrouped(), level + 1);
+                log.info(prefix + "</avp>");
+            } else if (avpRep != null) {
+                String value = "";
+
+                if (avpRep.getType().equals("Integer32"))
+                    value = String.valueOf(avp.getInteger32());
+                else if (avpRep.getType().equals("Integer64") || avpRep.getType().equals("Unsigned64"))
+                    value = String.valueOf(avp.getInteger64());
+                else if (avpRep.getType().equals("Unsigned32"))
+                    value = String.valueOf(avp.getUnsigned32());
+                else if (avpRep.getType().equals("Float32"))
+                    value = String.valueOf(avp.getFloat32());
+                else
+                    // value = avp.getOctetString();
+                    value = new String(avp.getOctetString(), StandardCharsets.UTF_8);
+
+                log.info(prefix + "<avp name=\"" + avpRep.getName() + "\" code=\"" + avp.getCode() + "\" vendor=\""
+                        + avp.getVendorId()
+                        + "\" value=\"" + value + "\" />");
+            }
+        }
+    }
+
+    /**
+     * @return
+     */
+    private boolean finished() {
+        return this.finished;
+    }
+
+    public static void main(String[] args) {
+        DiameterServer es = new DiameterServer();
+        es.initStack();
+
+        while (!es.finished()) {
+            try {
+                Thread.currentThread().sleep(5000);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * org.jdiameter.api.NetworkReqListener#processRequest(org.jdiameter.api
+     * .Request)
+     */
+    // @Override
+    // public Answer processRequest(Request request) {
+    // dumpMessage(request, false);
+    // /*
+    // * if (request.getCommandCode() != commandCode) {
+    // * log.error("Received bad answer: " + request.getCommandCode());
+    // * return null;
+    // * }
+    // */
+    // // AvpSet requestAvpSet = request.getAvps();
+
+    // Answer answer = createAnswer(request, 2001, EXCHANGE_TYPE_INITIAL);
+    // return answer;
+
+    // /*
+    // * Avp exchangeTypeAvp = requestAvpSet.getAvp(exchangeTypeCode, vendorID);
+    // * Avp exchangeDataAvp = requestAvpSet.getAvp(exchangeDataCode, vendorID);
+    // * if (exchangeTypeAvp == null) {
+    // * log.error("Request does not have Exchange-Type");
+    // *
+    // * Answer answer = createAnswer(request, 5004, EXCHANGE_TYPE_TERMINATING);
+    // * dumpMessage(answer,true);
+    // * return answer; // set
+    // * // exchange
+    // * // type
+    // * // to
+    // * // terminating
+    // * }
+    // * if (exchangeDataAvp == null) {
+    // * log.error("Request does not have Exchange-Data");
+    // * Answer answer = createAnswer(request, 5004, EXCHANGE_TYPE_TERMINATING);
+    // * dumpMessage(answer,true);
+    // * return answer; // set
+    // * // exchange
+    // * // type
+    // * // to
+    // * // terminating
+    // * }
+    // * // cast back to int(Enumerated is Unsigned32, and API represents it as
+    // * // long so its easier
+    // * // to manipulate
+    // * try {
+    // * switch ((int) exchangeTypeAvp.getUnsigned32()) {
+    // * case EXCHANGE_TYPE_INITIAL:
+    // * // JIC check;
+    // * String data = exchangeDataAvp.getUTF8String();
+    // * this.session = this.factory.getNewSession(request.getSessionId());
+    // * if (data.equals(TO_RECEIVE[toReceiveIndex])) {
+    // * // create session;
+    // *
+    // * Answer answer = createAnswer(request, 2001, EXCHANGE_TYPE_INITIAL); // set
+    // * // exchange
+    // * // type
+    // * // to
+    // * // terminating
+    // * toReceiveIndex++;
+    // * dumpMessage(answer,true);
+    // * return answer;
+    // * } else {
+    // * log.error("Received wrong Exchange-Data: " + data);
+    // * Answer answer = request.createAnswer(6000);
+    // * }
+    // * break;
+    // * case EXCHANGE_TYPE_INTERMEDIATE:
+    // * // JIC check;
+    // * data = exchangeDataAvp.getUTF8String();
+    // * if (data.equals(TO_RECEIVE[toReceiveIndex])) {
+    // *
+    // * Answer answer = createAnswer(request, 2001, EXCHANGE_TYPE_INTERMEDIATE); //
+    // * set
+    // * // exchange
+    // * // type
+    // * // to
+    // * // terminating
+    // * toReceiveIndex++;
+    // * dumpMessage(answer,true);
+    // * return answer;
+    // * } else {
+    // * log.error("Received wrong Exchange-Data: " + data);
+    // * }
+    // * break;
+    // * case EXCHANGE_TYPE_TERMINATING:
+    // * data = exchangeDataAvp.getUTF8String();
+    // * if (data.equals(TO_RECEIVE[toReceiveIndex])) {
+    // * // good, we reached end of FSM.
+    // * finished = true;
+    // * // release session and its resources.
+    // * Answer answer = createAnswer(request, 2001, EXCHANGE_TYPE_TERMINATING); //
+    // * set
+    // * // exchange
+    // * // type
+    // * // to
+    // * // terminating
+    // * toReceiveIndex++;
+    // * this.session.release();
+    // * finished = true;
+    // * this.session = null;
+    // * dumpMessage(answer,true);
+    // * return answer;
+    // *
+    // * } else {
+    // * log.error("Received wrong Exchange-Data: " + data);
+    // * }
+    // * break;
+    // * default:
+    // * log.error("Bad value of Exchange-Type avp: " +
+    // * exchangeTypeAvp.getUnsigned32());
+    // * break;
+    // * }
+    // * } catch (AvpDataException e) {
+    // * // thrown when interpretation of byte[] fails
+    // * e.printStackTrace();
+    // * } catch (InternalException e) {
+    // * // TODO Auto-generated catch block
+    // * e.printStackTrace();
+    // * }
+    // * //error, something bad happened.
+    // * finished = true;
+    // */
+    // // return null;
+    // }
+
+    // private Answer createAnswer(Request r, int resultCode, int enumType) {
+    // Answer answer = r.createAnswer(resultCode);
+    // AvpSet answerAvps = answer.getAvps();
+    // // code , value , vendor, mandatory,protected,isUnsigned32
+    // // (Enumerated)
+    // // Avp exchangeType = answerAvps.addAvp(exchangeTypeCode, (long) enumType,
+    // // vendorID, true, false, true); // value
+    // // is
+    // // set
+    // // on
+    // // creation
+    // // code , value , vendor, mandatory,protected, isOctetString
+    // // Avp exchengeData = answerAvps.addAvp(exchangeDataCode,
+    // // TO_RECEIVE[toReceiveIndex], vendorID, true, false, false); // value
+    // // is
+    // // set
+    // // on
+    // // creation
+
+    // // add origin, its required by duplicate detection
+    // // answerAvps.addAvp(Avp.ORIGIN_HOST,
+    // // stack.getMetaData().getLocalPeer().getUri().getFQDN(), true, false, true);
+    // // answerAvps.addAvp(Avp.ORIGIN_REALM,
+    // // stack.getMetaData().getLocalPeer().getRealmName(), true, false, true);
+
+    // // This part is not working because of jDiameter routing
+    // if (r.getAvps().getAvp(Avp.DESTINATION_HOST) != null) {
+    // answerAvps.addAvp(Avp.ORIGIN_HOST,
+    // r.getAvps().getAvp(Avp.DESTINATION_HOST).getRawData());
+    // }
+    // if (r.getAvps().getAvp(Avp.DESTINATION_REALM) != null) {
+    // answerAvps.addAvp(Avp.ORIGIN_REALM,
+    // r.getAvps().getAvp(Avp.DESTINATION_REALM).getRawData());
+    // }
+    // if (r.getAvps().getAvp(Avp.ORIGIN_HOST) != null) {
+    // answerAvps.addAvp(Avp.DESTINATION_HOST,
+    // r.getAvps().getAvp(Avp.ORIGIN_HOST).getRawData());
+    // }
+
+    // // This one is working
+    // if (r.getAvps().getAvp(Avp.ORIGIN_REALM) != null) {
+    // answerAvps.addAvp(Avp.DESTINATION_REALM,
+    // r.getAvps().getAvp(Avp.ORIGIN_REALM).getRawData());
+    // }
+
+    // byte[] b = hexStringToByteArray("31313131313131313131313131313131");
+    // answerAvps.addAvp(1, b, true, false);
+
+    // return answer;
+    // }
+
+    @Override
+    public Answer processRequest(Request request) {
+        dumpMessage(request, false);
+
+        try {
+            AvpSet requestAvps = request.getAvps();
+            Avp msisdnAvp = requestAvps.getAvp(701);
+            Avp destinationRealmAvp = requestAvps.getAvp(Avp.DESTINATION_REALM);
+            Avp destinationHostAvp = requestAvps.getAvp(Avp.DESTINATION_HOST);
+
+            if (msisdnAvp == null || destinationRealmAvp == null || destinationHostAvp == null) {
+                return createAnswer(request, 5005, "Missing mandatory AVPs.");
+            }
+
+            String msisdn = msisdnAvp.getUTF8String();
+            String destinationRealm = destinationRealmAvp.getUTF8String();
+            String destinationHost = destinationHostAvp.getUTF8String();
+
+            log.info("Processing SRI Request:");
+            log.info("MSISDN: " + msisdn);
+            log.info("Destination-Realm: " + destinationRealm);
+            log.info("Destination-Host: " + destinationHost);
+
+            return createAnswer(request, 2001, "Processed successfully.");
+        } catch (AvpDataException e) {
+            log.error("Error processing request AVPs: ", e);
+            return createAnswer(request, 5004, "Invalid AVP data.");
+        }
+    }
+
+    private Answer createAnswer(Request request, int resultCode, String message) {
+        Answer answer = request.createAnswer(resultCode);
+        try {
             AvpSet answerAvps = answer.getAvps();
-            // code , value , vendor, mandatory,protected,isUnsigned32
-            // (Enumerated)
-            //Avp exchangeType = answerAvps.addAvp(exchangeTypeCode, (long) enumType, vendorID, true, false, true); // value
-                                                                                                                                                                                                                            // is
-                                                                                                                                                                                                                            // set
-                                                                                                                                                                                                                            // on
-                                                                                                                                                                                                                            // creation
-            // code , value , vendor, mandatory,protected, isOctetString
-            //Avp exchengeData = answerAvps.addAvp(exchangeDataCode, TO_RECEIVE[toReceiveIndex], vendorID, true, false, false); // value
-                                                                                                                                                                                                                                                    // is
-                                                                                                                                                                                                                                                    // set
-                                                                                                                                                                                                                                                    // on
-                                                                                                                                                                                                                                                    // creation
+            AvpSet requestAvps = request.getAvps();
 
+            // Copy essential AVPs from the request
+            answerAvps.addAvp(requestAvps.getAvp(Avp.AUTH_SESSION_STATE));
 
-            //add origin, its required by duplicate detection
-            //answerAvps.addAvp(Avp.ORIGIN_HOST, stack.getMetaData().getLocalPeer().getUri().getFQDN(), true, false, true);
-            //answerAvps.addAvp(Avp.ORIGIN_REALM, stack.getMetaData().getLocalPeer().getRealmName(), true, false, true);
-            
-            // This part is not working because of jDiameter routing
-            if (r.getAvps().getAvp(Avp.DESTINATION_HOST) != null) {
-                answerAvps.addAvp(Avp.ORIGIN_HOST, r.getAvps().getAvp(Avp.DESTINATION_HOST).getRawData());
-            }
-            if (r.getAvps().getAvp(Avp.DESTINATION_REALM) != null) {
-                answerAvps.addAvp(Avp.ORIGIN_REALM, r.getAvps().getAvp(Avp.DESTINATION_REALM).getRawData());
-            }
-            if (r.getAvps().getAvp(Avp.ORIGIN_HOST) != null) {
-                answerAvps.addAvp(Avp.DESTINATION_HOST, r.getAvps().getAvp(Avp.ORIGIN_HOST).getRawData());
-            }
-            
-            // This one is working
-            if (r.getAvps().getAvp(Avp.ORIGIN_REALM) != null) {
-                answerAvps.addAvp(Avp.DESTINATION_REALM, r.getAvps().getAvp(Avp.ORIGIN_REALM).getRawData());
-            }
-            
-            byte[] b = hexStringToByteArray("31313131313131313131313131313131");
-            answerAvps.addAvp(1, b, true, false);
-               
-            return answer;
-	}
+            Avp originHostAvp = requestAvps.getAvp(Avp.ORIGIN_HOST);
+            Avp originRealmAvp = requestAvps.getAvp(Avp.ORIGIN_REALM);
+            Avp destinationHostAvp = requestAvps.getAvp(Avp.DESTINATION_HOST);
+            Avp destinationRealmAvp = requestAvps.getAvp(Avp.DESTINATION_REALM);
+
+            String originHost = originHostAvp.getUTF8String();
+            String originRealm = originRealmAvp.getUTF8String();
+            String destinationHost = destinationHostAvp.getUTF8String();
+            String destinationRealm = destinationRealmAvp.getUTF8String();
+
+            answerAvps.addAvp(Avp.ORIGIN_HOST, destinationHost, true, false, true);
+            answerAvps.addAvp(Avp.ORIGIN_REALM, destinationRealm, true, false, true);
+            answerAvps.addAvp(Avp.DESTINATION_HOST, originHost, true, false, true);
+            answerAvps.addAvp(Avp.DESTINATION_REALM, originRealm, true, false, true);
+
+            // Add custom AVPs
+            String imsi = requestAvps.getAvp(Avp.USER_NAME).getUTF8String();
+            String msisdn = requestAvps.getAvp(Avp.MSISDN).getUTF8String();
+
+            String mscNumber = "3333333333";
+
+            answerAvps.addAvp(Avp.USER_NAME, imsi, true, false, true); // IMSI
+            // answerAvps.addAvp(2401, msisdn, true, false, true);
+            AvpSet servingNodeAvp = answerAvps.addGroupedAvp(2401, 0, true, false);
+            servingNodeAvp.addAvp(2403, mscNumber, true, false, true);
+            AvpSet userIdentifierAvp = answerAvps.addGroupedAvp(3102, 0, true, false);
+            userIdentifierAvp.addAvp(Avp.MSISDN, msisdn, true, false, true);
+            // answerAvps.addAvp(3102, msisdn, true, false, true);
+            answerAvps.addAvp(requestAvps.getAvp(3300)); // MSISDN
+
+            dumpMessage(answer, true);
+        } catch (Exception e) {
+            log.error("Error creating Answer: ", e);
+        }
+        return answer;
+    }
+
 }

@@ -657,8 +657,8 @@ public class DiameterFirewall implements ManagementEventListener, ServerListener
         //sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         //sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
         sslContextFactory.setKeyStorePath("diameterfw_keystore");
-        sslContextFactory.setKeyStorePassword("BkgcNSrVn4wQWNpEowoHeHxgZeSn5WV7");
-        sslContextFactory.setKeyManagerPassword("BkgcNSrVn4wQWNpEowoHeHxgZeSn5WV7");
+        sslContextFactory.setKeyStorePassword("123456");
+        sslContextFactory.setKeyManagerPassword("123456");
         sslContextFactory.setSniRequired(false);
 
 

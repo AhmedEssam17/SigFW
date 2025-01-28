@@ -92,6 +92,11 @@
             </exclusions>
         </dependency>
         <dependency>
+                <groupId>xerces</groupId>
+                <artifactId>xercesImpl</artifactId>
+                <version>2.12.0</version> <!-- Check for the latest version -->
+        </dependency>
+        <dependency>
             <groupId>org.mobicents.protocols.ss7.sccp</groupId>
             <artifactId>sccp-api</artifactId>
             <version>${restcomm.jss7.version}</version>

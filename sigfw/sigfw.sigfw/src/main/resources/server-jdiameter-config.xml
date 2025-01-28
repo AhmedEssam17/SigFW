@@ -52,12 +52,12 @@
 	<Network>
 		<Peers>
 			<!-- our client, lets define it -->
-			<Peer name="aaa://127.0.0.1:13869" portRange="3868-3868" attempt_connect="false"
+			<Peer name="aaa://127.0.0.1:13768" portRange="13768-13768" attempt_connect="false"
 				rating="1" />
 
 		</Peers>
 		<Realms>
-			<Realm name="exchange.example.org" peers="127.0.0.1" local_action="LOCAL" dynamic="false" exp_time="1">
+			<Realm name="exchangeClient.example.org" peers="127.0.0.1" local_action="LOCAL" dynamic="false" exp_time="1">
 				<ApplicationID>
 					<VendorId value="0" />
 					<AuthApplId value="16777251" />
@@ -65,7 +65,7 @@
 				</ApplicationID>
 			</Realm>
                         
-                        <Realm name="honeypot.example.org" peers="127.0.0.1" local_action="LOCAL" dynamic="false" exp_time="1">
+			<Realm name="honeypot.example.org" peers="127.0.0.1" local_action="LOCAL" dynamic="false" exp_time="1">
 				<ApplicationID>
 					<VendorId value="0" />
 					<AuthApplId value="16777251" />
