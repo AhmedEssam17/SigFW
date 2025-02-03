@@ -381,7 +381,9 @@ public class SS7ClientLiveInput extends AbstractSctpBase
 
     private void initiateSendRoutingInfo() throws MAPException {
         try {
-            logger.debug("[[[[[[[[[[ initiateSendRoutingInfo (Client) ]]]]]]]]]]");
+            // System.out
+            // .println("\n\n\n\n\n\n\n\n\n[[[[[[[[[[ Initiate SendRoutingInfo Request
+            // ]]]]]]]]]]");
 
             SccpAddress callingParty = this.sccpProvider.getParameterFactory().createSccpAddress(
                     RoutingIndicator.ROUTING_BASED_ON_GLOBAL_TITLE,
@@ -413,7 +415,18 @@ public class SS7ClientLiveInput extends AbstractSctpBase
                     clientDestReference, null, false,
                     null, null, null, false, imsi, false, false, null);
             clientDialog.send();
-            logger.debug("MAPDialogSms created and sent successfully on the client.");
+            System.out
+                    .println(
+                            "\n\n\n\n\n\n\n\n\n\n\n\n[[[[[[[[[[    Initiate SendRoutingInfo Request      ]]]]]]]]]]");
+
+            System.out.println("MAP Dialog Parameters: \n\tIMSI: " + imsi.getData() + "\n\tMSISDN: "
+                    + clientOrigReference.getAddress()
+                    + "\n\tService Center Address: \n\t\tNature: " + clientDestReference.getAddressNature() +
+                    "\n\t\tPlan: " + clientDestReference.getNumberingPlan() + "\n\t\tAddress: "
+                    + clientDestReference.getAddress());
+            System.out
+                    .println(
+                            "\n>>>>>>>>>>>>>>>>> MAPDialogSms created and sent to SS7 Server <<<<<<<<<<<<<<<<<");
         } catch (MAPException e) {
             logger.error("Error while initiating Routing Info Request: " +
                     e.getMessage(), e);
@@ -471,7 +484,8 @@ public class SS7ClientLiveInput extends AbstractSctpBase
 
     @Override
     public void onMAPMessage(MAPMessage message) {
-        logger.info("Received a MAPMessage (Client): " + message);
+        System.out
+                .println("\n[[[[[[[[[[    onMAPMessage      ]]]]]]]]]]");
         // Handle MAP messages
     }
 
@@ -526,16 +540,13 @@ public class SS7ClientLiveInput extends AbstractSctpBase
 
     @Override
     public void onSendRoutingInfoForSMResponse(SendRoutingInfoForSMResponse response) {
-        logger.debug("[[[[[[[[[[    onSendRoutingInfoForSMResponse      ]]]]]]]]]]");
-        logger.info("Received SendRoutingInfoForSMResponse (Client): " + response);
+        System.out.println("[[[[[[[[[[    onSendRoutingInfoForSMResponse      ]]]]]]]]]]");
+        System.out
+                .println("\n>>>>>>>>>>>>>>>>> Received SendRoutingInfoForSMResponse from SS7 Server <<<<<<<<<<<<<<<<<");
 
         // Process the SendRoutingInfoForSMResponse here
-        MAPDialogSms mapDialog = response.getMAPDialog();
-
-        MAPApplicationContext appContext = mapDialog.getApplicationContext();
-        logger.debug(String.format("appContext = %s", appContext));
-        logger.debug(String.format("getIMSI = %s", response.getIMSI()));
-        logger.debug(String.format("getLocationInfoWithLMSI = %s", response.getLocationInfoWithLMSI()));
+        System.out.println("Received Parameters: \n\tIMSI: " + response.getIMSI().getData()
+                + "\n\tLocation Info with LMSI: \n\t\t" + response.getLocationInfoWithLMSI().getNetworkNodeNumber());
     }
 
     @Override
@@ -561,8 +572,11 @@ public class SS7ClientLiveInput extends AbstractSctpBase
     @Override
     public void onDialogAccept(MAPDialog mapDialog, MAPExtensionContainer extensionContainer) {
         if (logger.isDebugEnabled()) {
-            logger.debug(String.format("onDialogAccept for DialogId=%d MAPExtensionContainer=%s",
-                    mapDialog.getLocalDialogId(), extensionContainer));
+            // logger.debug(String.format("onDialogAccept for DialogId=%d
+            // MAPExtensionContainer=%s",
+            // mapDialog.getLocalDialogId(), extensionContainer));
+            System.out
+                    .println("\n[[[[[[[[[[    onDialogAccept      ]]]]]]]]]]");
         }
     }
 

@@ -185,11 +185,13 @@ public class DiameterServer implements NetworkReqListener {
 
     private void dumpMessage(Message message, boolean sending) {
         if (log.isInfoEnabled()) {
-            log.info((sending ? "Sending " : "Received ") + (message.isRequest() ? "Request: " : "Answer: ")
-                    + message.getCommandCode() + "\nE2E:"
-                    + message.getEndToEndIdentifier() + "\nHBH:" + message.getHopByHopIdentifier() + "\nAppID:"
-                    + message.getApplicationId());
-            log.info("AVPS[" + message.getAvps().size() + "]: \n");
+            System.out.println("\n========================= " + (sending ? "Sending " : "Received ")
+                    + (message.isRequest() ? "Request: " : "Answer: ")
+                    + message.getCommandCode() + " =========================");
+            // + "\nE2E:" + message.getEndToEndIdentifier()
+            // + "\nHBH:" + message.getHopByHopIdentifier()
+            // + "\nAppID:" + message.getApplicationId());
+            System.out.println("AVPS[" + message.getAvps().size() + "]: \n");
             try {
                 printAvps(message.getAvps());
             } catch (AvpDataException e) {
@@ -214,16 +216,17 @@ public class DiameterServer implements NetworkReqListener {
      * @throws AvpDataException
      */
     private void printAvpsAux(AvpSet avpSet, int level) throws AvpDataException {
-        String prefix = "                      ".substring(0, level * 2);
+        // String prefix = " ".substring(0, level * 2);
 
         for (Avp avp : avpSet) {
             AvpRepresentation avpRep = AvpDictionary.INSTANCE.getAvp(avp.getCode(), avp.getVendorId());
 
             if (avpRep != null && avpRep.getType().equals("Grouped")) {
-                log.info(prefix + "<avp name=\"" + avpRep.getName() + "\" code=\"" + avp.getCode() + "\" vendor=\""
-                        + avp.getVendorId() + "\">");
+                System.out.println(
+                        "<avp name=\"" + avpRep.getName() + "\" code=\"" + avp.getCode() + "\" vendor=\""
+                                + avp.getVendorId() + "\">");
                 printAvpsAux(avp.getGrouped(), level + 1);
-                log.info(prefix + "</avp>");
+                System.out.println("</avp>");
             } else if (avpRep != null) {
                 String value = "";
 
@@ -239,7 +242,7 @@ public class DiameterServer implements NetworkReqListener {
                     // value = avp.getOctetString();
                     value = new String(avp.getOctetString(), StandardCharsets.UTF_8);
 
-                log.info(prefix + "<avp name=\"" + avpRep.getName() + "\" code=\"" + avp.getCode() + "\" vendor=\""
+                System.out.println("<avp name=\"" + avpRep.getName() + "\" code=\"" + avp.getCode() + "\" vendor=\""
                         + avp.getVendorId()
                         + "\" value=\"" + value + "\" />");
             }
@@ -461,17 +464,8 @@ public class DiameterServer implements NetworkReqListener {
                 return createAnswer(request, 5005, "Missing mandatory AVPs.");
             }
 
-            String msisdn = msisdnAvp.getUTF8String();
-            String destinationRealm = destinationRealmAvp.getUTF8String();
-            String destinationHost = destinationHostAvp.getUTF8String();
-
-            log.info("Processing SRI Request:");
-            log.info("MSISDN: " + msisdn);
-            log.info("Destination-Realm: " + destinationRealm);
-            log.info("Destination-Host: " + destinationHost);
-
             return createAnswer(request, 2001, "Processed successfully.");
-        } catch (AvpDataException e) {
+        } catch (Exception e) {
             log.error("Error processing request AVPs: ", e);
             return createAnswer(request, 5004, "Invalid AVP data.");
         }

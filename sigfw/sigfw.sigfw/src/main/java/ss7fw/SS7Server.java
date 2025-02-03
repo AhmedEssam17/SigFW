@@ -132,7 +132,6 @@ import org.mobicents.protocols.ss7.tcap.api.TCAPStack;
 import org.mobicents.protocols.ss7.tcap.asn.ApplicationContextName;
 import org.mobicents.protocols.ss7.tcap.asn.comp.Problem;
 import org.mobicents.protocols.ss7.tools.simulator.level1.M3UAManagementProxyImpl;
-import shared.MessageQueue;
 
 /**
  * SS7 server used for testing.
@@ -505,9 +504,12 @@ public class SS7Server extends AbstractSctpBase
     @Override
     public void onDialogRequest(MAPDialog mapDialog, AddressString destReference, AddressString origReference,
             MAPExtensionContainer extensionContainer) {
-        logger.debug(String.format("onDialogRequest for DialogId=%d DestRef=%s OrigRef=%s MAPExtensionContainer=%s",
-                mapDialog.getLocalDialogId(), destReference, origReference, extensionContainer));
-
+        System.out
+                .println("\n\n\n\n\n\n\n\n\n[[[[[[[[[[    onDialogRequest      ]]]]]]]]]]");
+        System.out
+                .println(String.format(
+                        "Dialog Parameters:\n\tDialogId=%d \n\tDestRef=%s \n\tOrigRef=%s\n",
+                        mapDialog.getLocalDialogId(), destReference, origReference));
     }
 
     /*
@@ -523,6 +525,7 @@ public class SS7Server extends AbstractSctpBase
             logger.debug(String.format("onDialogRequest for DialogId=%d DestinationReference=%s OriginReference=%s ",
                     mapd.getLocalDialogId(), as, as1, as2, as3));
         }
+
     }
 
     /*
@@ -831,7 +834,7 @@ public class SS7Server extends AbstractSctpBase
     @Override
     public void onMAPMessage(MAPMessage arg0) {
         // TODO Auto-generated method stub
-        logger.debug("[[[[[[[[[[    onMAPMessage      ]]]]]]]]]]");
+        System.out.println("[[[[[[[[[[    onMAPMessage      ]]]]]]]]]]");
     }
 
     /**
@@ -1048,18 +1051,23 @@ public class SS7Server extends AbstractSctpBase
 
     @Override
     public void onSendRoutingInfoForSMRequest(SendRoutingInfoForSMRequest request) {
-        logger.debug("[[[[[[[[[[    onSendRoutingInfoForSMRequest      ]]]]]]]]]]");
-        logger.debug("Received SendRoutingInfoForSMRequest: " + request);
+        System.out.println("[[[[[[[[[[    onSendRoutingInfoForSMRequest      ]]]]]]]]]]");
+        System.out
+                .println("\n>>>>>>>>>>>>>>>>> Received SendRoutingInfoForSMRequest from SS7 Client <<<<<<<<<<<<<<<<<");
         MAPDialogSms mapDialog = request.getMAPDialog();
 
         try {
             String msisdn = request.getMsisdn().getAddress();
-            logger.info(String.format("MSISDN: %s", msisdn));
 
             long invokeId = request.getInvokeId();
             IMSI imsi = request.getImsi();
             String imsiString = imsi.getData();
             AddressString serviceCenterAddress = request.getServiceCentreAddress();
+
+            System.out.println("Parameters: \n\tIMSI: " + imsiString + "\n\tMSISDN: " + msisdn
+                    + "\n\tService Center Address: \n\t\tNature: " + serviceCenterAddress.getAddressNature() +
+                    "\n\t\tPlan: " + serviceCenterAddress.getNumberingPlan() + "\n\t\tAddress: "
+                    + serviceCenterAddress.getAddress());
 
             // ====================================================================================
 
@@ -1078,7 +1086,9 @@ public class SS7Server extends AbstractSctpBase
                 writer.write(message);
                 writer.newLine();
                 writer.flush();
-                System.out.println("SS7 Server: Message written to pipe.");
+                System.out
+                        .println(
+                                "\n>>>>>>>>>>>>>>>>> Sent Request to Diameter Client <<<<<<<<<<<<<<<<<");
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -1088,7 +1098,9 @@ public class SS7Server extends AbstractSctpBase
             try (BufferedReader reader = new BufferedReader(new FileReader("/tmp/routing_info_res_pipe"))) {
                 String message;
                 while ((message = reader.readLine()) != null) {
-                    System.out.println("SS7 Server: Received message: " + message);
+                    System.out
+                            .println(
+                                    "\n>>>>>>>>>>>>>>>>> Received Response from Diameter Client <<<<<<<<<<<<<<<<<");
 
                     JSONParser parser = new JSONParser();
                     JSONObject jsonObject = (JSONObject) parser.parse(message);
@@ -1096,6 +1108,8 @@ public class SS7Server extends AbstractSctpBase
                     imsiString = (String) jsonObject.get("username");
                     mscNumberString = (String) jsonObject.get("mscNumber");
                     msisdn = (String) jsonObject.get("msisdn");
+                    System.out.println("\nReceived Parameters: \n\tIMSI: " + imsiString + "\n\tMSISDN: " + msisdn
+                            + "\n\tMSC Number: " + mscNumberString);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -1121,7 +1135,9 @@ public class SS7Server extends AbstractSctpBase
             mapDialog.addSendRoutingInfoForSMResponse(invokeId, imsi, locationInfoWithLMSI,
                     extensionContainer, null,
                     null);
-            logger.debug("SendRoutingInfoForSMResponse sent successfully.");
+            System.out
+                    .println(
+                            "\n>>>>>>>>>>>>>>>>> SendRoutingInfoForSMResponse sent to SS7 Client <<<<<<<<<<<<<<<<<");
         } catch (Exception e) {
             logger.error("Error processing SendRoutingInfoForSMRequest", e);
         }

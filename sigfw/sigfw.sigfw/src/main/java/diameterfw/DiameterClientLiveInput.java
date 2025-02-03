@@ -86,7 +86,6 @@ import org.mobicents.protocols.api.Server;
 import org.mobicents.protocols.api.ServerListener;
 import org.mobicents.protocols.sctp.AssociationImpl;
 import org.mobicents.protocols.sctp.ManagementImpl;
-import shared.MessageQueue;
 
 public class DiameterClientLiveInput
         implements ManagementEventListener, ServerListener, AssociationListener, EventListener<Request, Answer> {
@@ -312,7 +311,6 @@ public class DiameterClientLiveInput
      */
     @Override
     public void receivedSuccessMessage(Request request, Answer answer) {
-        logger.info("Received response: " + answer);
         dumpMessage(answer, false);
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("/tmp/routing_info_res_pipe"))) {
@@ -322,10 +320,6 @@ public class DiameterClientLiveInput
             String authSessionState = answerAvps.getAvp(Avp.AUTH_SESSION_STATE).getUTF8String();
             String originHost = answerAvps.getAvp(Avp.ORIGIN_HOST).getUTF8String();
             String originRealm = answerAvps.getAvp(Avp.ORIGIN_REALM).getUTF8String();
-            // String destinationHost =
-            // answerAvps.getAvp(Avp.DESTINATION_HOST).getUTF8String();
-            // String destinationRealm =
-            // answerAvps.getAvp(Avp.DESTINATION_REALM).getUTF8String();
             String username = answerAvps.getAvp(Avp.USER_NAME).getUTF8String();
 
             String mscNumber = answerAvps.getAvp(2401).getGrouped().getAvp(2403).getUTF8String();
@@ -342,22 +336,11 @@ public class DiameterClientLiveInput
                     sessionId, authSessionState, originHost, originRealm,
                     username, mscNumber, msisdn,
                     serviceCenterObject != null ? serviceCenterObject.toJSONString() : "null");
-            // String message = String.format(
-            // "{ \"sessionId\": \"%s\", \"authSessionState\": \"%s\", \"originHost\":
-            // \"%s\", " +
-            // "\"originRealm\": \"%s\", \"destinationHost\": \"%s\", \"destinationRealm\":
-            // \"%s\", " +
-            // "\"username\": \"%s\", \"mscNumber\": \"%s\", \"msisdn\": \"%s\",
-            // \"serviceCenter\": %s }",
-            // sessionId, authSessionState, originHost, originRealm,
-            // destinationHost, destinationRealm,
-            // username, mscNumber, msisdn,
-            // serviceCenterObject != null ? serviceCenterObject.toJSONString() : "null");
 
             writer.write(message);
             writer.newLine();
             writer.flush();
-            System.out.println("Client Diameter: Message written to pipe.");
+            System.out.println("\n>>>>>>>>>>>>>>>>> Response sent to SS7 Server <<<<<<<<<<<<<<<<<");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -376,11 +359,13 @@ public class DiameterClientLiveInput
 
     private void dumpMessage(Message message, boolean sending) {
         if (logger.isInfoEnabled()) {
-            logger.info((sending ? "Sending " : "Received ") + (message.isRequest() ? "Request: " : "Answer: ")
-                    + message.getCommandCode() + "\nE2E:"
-                    + message.getEndToEndIdentifier() + "\nHBH:" + message.getHopByHopIdentifier() + "\nAppID:"
-                    + message.getApplicationId());
-            logger.info("AVPS[" + message.getAvps().size() + "]: \n");
+            System.out.println("\n========================= " + (sending ? "Sending " : "Received ")
+                    + (message.isRequest() ? "Request: " : "Answer: ")
+                    + message.getCommandCode() + " =========================");
+            // + "\nE2E:" + message.getEndToEndIdentifier()
+            // + "\nHBH:" + message.getHopByHopIdentifier()
+            // + "\nAppID:" + message.getApplicationId());
+            System.out.println("AVPS[" + message.getAvps().size() + "]: \n");
             try {
                 printAvps(message.getAvps());
             } catch (AvpDataException e) {
@@ -405,16 +390,16 @@ public class DiameterClientLiveInput
      * @throws AvpDataException
      */
     private void printAvpsAux(AvpSet avpSet, int level) throws AvpDataException {
-        String prefix = "                      ".substring(0, level * 2);
+        // String prefix = " ".substring(0, level * 2);
 
         for (Avp avp : avpSet) {
             AvpRepresentation avpRep = AvpDictionary.INSTANCE.getAvp(avp.getCode(), avp.getVendorId());
 
             if (avpRep != null && avpRep.getType().equals("Grouped")) {
-                logger.info(prefix + "<avp name=\"" + avpRep.getName() + "\" code=\"" + avp.getCode() + "\" vendor=\""
+                System.out.println("<avp name=\"" + avpRep.getName() + "\" code=\"" + avp.getCode() + "\" vendor=\""
                         + avp.getVendorId() + "\">");
                 printAvpsAux(avp.getGrouped(), level + 1);
-                logger.info(prefix + "</avp>");
+                System.out.println("</avp>");
             } else if (avpRep != null) {
                 String value = "";
 
@@ -430,7 +415,7 @@ public class DiameterClientLiveInput
                     // value = avp.getOctetString();
                     value = new String(avp.getOctetString(), StandardCharsets.UTF_8);
 
-                logger.info(prefix + "<avp name=\"" + avpRep.getName() + "\" code=\"" + avp.getCode() + "\" vendor=\""
+                System.out.println("<avp name=\"" + avpRep.getName() + "\" code=\"" + avp.getCode() + "\" vendor=\""
                         + avp.getVendorId()
                         + "\" value=\"" + value + "\" />");
             }
@@ -481,7 +466,8 @@ public class DiameterClientLiveInput
 
             // Send the request
             this.session.send(request, this);
-            logger.info("Send-Routing-Info-for-SM-Request message sent to the server.");
+            System.out.println(
+                    "\n>>>>>>>>>>>>>>>>> Send-Routing-Info-for-SM-Request message sent to Diameter Server <<<<<<<<<<<<<<<<<");
         } catch (Exception e) {
             logger.error("Error while sending Send-Routing-Info-for-SM-Request: ", e);
         }
@@ -521,7 +507,8 @@ public class DiameterClientLiveInput
                 try (BufferedReader reader = new BufferedReader(new FileReader("/tmp/routing_info_req_pipe"))) {
                     String message;
                     while ((message = reader.readLine()) != null) {
-                        System.out.println("Diameter Client: Received message: " + message);
+                        System.out.println(
+                                "\n>>>>>>>>>>>>>>>>> Received message from SS7 Server <<<<<<<<<<<<<<<<<");
 
                         // Parse the message
                         JSONParser parser = new JSONParser();
@@ -537,9 +524,9 @@ public class DiameterClientLiveInput
                         String numberingPlan = (String) serviceCenterObject.get("numberingPlan");
                         String address = (String) serviceCenterObject.get("address");
 
-                        System.out.println("Diameter Client: Processed IMSI: " + imsi + ", MSISDN: " + msisdn);
-                        System.out.println("Diameter Client: Service Center Address - Nature: " + addressNature +
-                                ", Plan: " + numberingPlan + ", Address: " + address);
+                        System.out.println("\nReceived Parameters: \n\tIMSI: " + imsi + "\n\tMSISDN: " + msisdn
+                                + "\n\tService Center Address: \n\t\tNature: " + addressNature +
+                                "\n\t\tPlan: " + numberingPlan + "\n\t\tAddress: " + address);
 
                         ec.sendRoutingInfoForSMRequest(msisdn, imsi, serviceCenterObject);
                     }
